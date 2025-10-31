@@ -408,9 +408,10 @@ const RideBookedHistory = () => {
                         className="px-3 py-1 h-8 text-xs bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/40 border border-emerald-500/30 cursor-pointer"
                       >
                         <CheckCircle className="h-3 w-3 mr-1" />
-                        Found Car
+                        {rideBooking?.ride?.vehicle?.type === "Wheeler2" ? "Yay! Helmet On" : "Chill! Seat Belt On"}
                       </Button>
                     )}
+
                     {rideBooking.status === "Confirmed" && (
                       <Button
                         onClick={() => handleCancelBooking(rideBooking.id)}

@@ -10,7 +10,6 @@ interface UserImageModalProps {
 }
 
 export const UserImageModal = ({ isOpen, onClose, imageUrl, userName }: UserImageModalProps) => {
-  console.log("imageurl", imageUrl);
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="p-4 bg-gray-800/90 backdrop-blur-sm border border-white/10 rounded-full max-w-[70vw] max-h-[70vh] md:max-w-[400px] md:max-h-[400px] aspect-square flex flex-col justify-center items-center [&>button]:text-green-500 [&>button]:cursor-pointer">

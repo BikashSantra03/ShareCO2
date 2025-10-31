@@ -155,21 +155,13 @@ const OrderDetailsPage = () => {
               <Home className="h-5 w-5" />
               <span className="hidden sm:inline">Home</span>
             </Button>
-            <Button
-              variant="ghost"
-              className="text-gray-400 hover:text-gray-200 cursor-pointer flex items-center gap-2 bg-gray-700/50 border border-gray-600/50 hover:bg-gray-600/50 rounded-lg px-3 py-1 transition-all duration-200"
-              onClick={() => window.open("https://app.shareco2.in", "_blank")}
-              aria-label="View Orders"
-            >
-              <span className="hidden sm:inline">View Orders</span>
-            </Button>
           </div>
         </div>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mt-4">
           <div className="flex items-center gap-3 animate-fade-in">
             <span className="text-3xl text-emerald-400">₹</span>
             <span className="text-xl sm:text-2xl font-semibold text-white">
-              Amount: ₹{order.amount.toFixed(2)} ({order.coinAmount.toFixed(2)} CP)
+              Amount: ₹{order.amount.toFixed(2)} <span className="text-green-400">({order.coinAmount.toFixed(2)} CP</span>)
             </span>
           </div>
           <button
@@ -177,7 +169,7 @@ const OrderDetailsPage = () => {
             className="flex items-center gap-2 px-3 py-2 bg-gray-700/50 hover:bg-gray-600/50 text-gray-200 rounded-lg transition-all duration-200 hover:scale-105 cursor-pointer"
             title="Copy Order ID"
           >
-            <span className="text-sm">ID {externalOrderId}</span>
+            <span className="text-sm">ID - {externalOrderId}</span>
             <Copy className="h-5 w-5" />
           </button>
         </div>
@@ -214,6 +206,17 @@ const OrderDetailsPage = () => {
                   >
                     {order.status}
                   </Badge>
+                </div>
+
+                <div className="flex items-center gap-3 p-2 bg-gray-700/20 rounded-lg hover:bg-gray-600/20 transition-colors">
+                  <Button
+                    variant="ghost"
+                    className="text-gray-400 hover:text-gray-200 cursor-pointer flex items-center gap-2 bg-gray-700/50 border border-gray-600/50 hover:bg-gray-600/50 rounded-lg px-3 py-1 transition-all duration-200"
+                    onClick={() => window.open("https://app.shareco2.in", "_blank")}
+                    aria-label="View Orders"
+                  >
+                    <span className="text-blue-500">View Orders</span>
+                  </Button>
                 </div>
               </div>
             </div>

@@ -1,12 +1,11 @@
 "use client";
 
-import React from "react";
+import React, { useRef, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { ArrowDown, ArrowUp, Clock, RefreshCw } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { getTransactions } from "../actions";
 import { PublicWalletTransaction } from "../types";
 import { utcIsoToLocalDate, utcIsoToLocalTime12 } from "@/utils/time";
@@ -90,23 +89,58 @@ const getPurposeLabel = (purpose: PublicWalletTransaction["purpose"]) => {
 
 const WalletTransactions = () => {
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   // Fetching all Transactions
   const {
-    data: { transactions = [] } = {},
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
     isLoading,
     isError,
     error,
-    refetch,
-  } = useQuery({
+  } = useInfiniteQuery({
     queryKey: ["wallet-transactions"],
-    queryFn: () => getTransactions({ page: 1, limit: 10 }),
+    queryFn: ({ pageParam = 1 }) => getTransactions({ page: pageParam, limit: 10 }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage, allPages, lastPageParam) => {
+      // If the number of transactions in the last page is less than the limit, there are no more pages
+      if (lastPage.transactions.length < 10) {
+        return undefined;
+      }
+      // Otherwise, return the next page number
+      return lastPageParam + 1;
+    },
   });
+
+  const flatTransactions = data?.pages.flatMap((page) => page.transactions) || [];
+
+  // Scroll handler for infinite loading
+  useEffect(() => {
+    const scrollElement = scrollRef.current;
+    if (!scrollElement) return;
+
+    const handleScroll = () => {
+      if (
+        scrollElement.scrollTop + scrollElement.clientHeight >=
+        scrollElement.scrollHeight - 5 && // small threshold for better UX
+        hasNextPage &&
+        !isFetchingNextPage
+      ) {
+        fetchNextPage();
+      }
+    };
+
+    scrollElement.addEventListener("scroll", handleScroll);
+    return () => scrollElement.removeEventListener("scroll", handleScroll);
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   // Handle manual refetch
   const handleRefresh = async () => {
     try {
-      await refetch();
+      await queryClient.invalidateQueries({ queryKey: ["wallet-transactions"] });
       toast.success("Transactions refreshed");
     } catch (error) {
       toast.error("Failed to refresh transactions");
@@ -124,13 +158,13 @@ const WalletTransactions = () => {
           </div>
         </CardHeader>
         <CardContent>
-          <ScrollArea className="h-[400px] w-full">
+          <div className="h-[400px] w-full overflow-y-auto">
             <div className="space-y-3">
               {Array.from({ length: 3 }).map((_, index) => (
                 <ShimmerTransactionCard key={index} />
               ))}
             </div>
-          </ScrollArea>
+          </div>
         </CardContent>
       </Card>
     );
@@ -160,10 +194,10 @@ const WalletTransactions = () => {
         </div>
       </CardHeader>
       <CardContent>
-        <ScrollArea className="h-[400px] w-full">
-          {transactions.length > 0 ? (
+        <div ref={scrollRef} className="h-[400px] w-full overflow-y-auto hide-scrollbar">
+          {flatTransactions.length > 0 ? (
             <div className="space-y-3">
-              {transactions.map((txn) => (
+              {flatTransactions.map((txn) => (
                 <div
                   key={txn.id}
                   className="p-3 bg-white/5 rounded-lg border border-white/10 hover:border-white/20 transition-all"
@@ -173,8 +207,7 @@ const WalletTransactions = () => {
                       <div className="flex items-center gap-2">
                         {getTransactionStyle(txn.direction).icon}
                         <p
-                          className={`font-medium ${getTransactionStyle(txn.direction).color
-                            }`}
+                          className={`font-medium ${getTransactionStyle(txn.direction).color}`}
                         >
                           {getPurposeLabel(txn.purpose)}
                         </p>
@@ -193,8 +226,7 @@ const WalletTransactions = () => {
                     </div>
                     <div className="flex flex-col items-end gap-1">
                       <Badge
-                        className={`text-sm ${getTransactionStyle(txn.direction).color
-                          }`}
+                        className={`text-sm ${getTransactionStyle(txn.direction).color}`}
                         variant="outline"
                       >
                         {txn.direction === "CREDIT"
@@ -244,16 +276,21 @@ const WalletTransactions = () => {
                   </div>
                 </div>
               ))}
+              {isFetchingNextPage && (
+                <div className="p-3 text-center">
+                  <p className="text-sm text-gray-400">Loading more...</p>
+                </div>
+              )}
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center py-10 text-center">
+            <div className="flex flex-col items-center justify-center h-full py-10 text-center">
               <p className="text-gray-400 mt-2">No transactions found</p>
               <p className="text-xs text-gray-500">
                 Your wallet transactions will appear here
               </p>
             </div>
           )}
-        </ScrollArea>
+        </div>
       </CardContent>
     </Card>
   );

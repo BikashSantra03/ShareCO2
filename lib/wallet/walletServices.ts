@@ -76,7 +76,10 @@ export async function getWalletTransactions({
             },
         }),
         prisma.walletTransaction.count({
-            where: { walletId: wallet.id },
+            where: {
+                walletId: wallet.id,
+                direction: { not: "NEUTRAL" },
+            },
         }),
     ]);
 

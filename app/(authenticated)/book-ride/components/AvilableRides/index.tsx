@@ -78,10 +78,12 @@ const AvailableRides = ({
   // Calculate carbon points required for a ride based on vehicle type
   const calculateRequiredPoints = (ride: PublicAvialableRides): number => {
     if (ride.vehicleType === "Wheeler2") {
-      return Number(process.env.NEXT_PUBLIC_CARBON_COST_TWO_WHEELER);
+      console.log("COST_TWO_WHEELER ", process.env.NEXT_PUBLIC_CARBON_COST_TWO_WHEELER)
+      return Number(process.env.NEXT_PUBLIC_CARBON_COST_TWO_WHEELER || 2);
     }
     if (ride.vehicleType === "Wheeler4") {
-      return Number(process.env.NEXT_PUBLIC_CARBON_COST_FOUR_WHEELER);
+      console.log("COST_FOUR_WHEELER", process.env.NEXT_PUBLIC_CARBON_COST_FOUR_WHEELER)
+      return Number(process.env.NEXT_PUBLIC_CARBON_COST_FOUR_WHEELER || 2);
     }
     return 0;
   };
@@ -274,8 +276,8 @@ const AvailableRides = ({
                     variant="default"
                     size="sm"
                     className={`w-full justify-center cursor-pointer ${!hasSeats
-                        ? "bg-red-700/50 hover:bg-red-700/60"
-                        : "bg-[#2E7D32]"
+                      ? "bg-red-700/50 hover:bg-red-700/60"
+                      : "bg-[#2E7D32]"
                       }`}
                   >
                     {pendingRides[ride.id] ? (
