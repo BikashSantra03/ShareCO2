@@ -3,6 +3,32 @@ import { OrderStatus } from "@prisma/client";
 import { entryOrderPurchase, entryOrderRefund, hasSufficientSpendableBalance } from "@/lib/wallet/walletServices";
 
 /**
+ * Check sufficient balsnce for external order
+ */
+export async function hahasSufficientSpendableBalanceForExternalOrder(
+    {
+        userId,
+        amount,
+    } : {
+        userId: string,
+        amount: number,        
+    }
+) {
+    return await prisma.$transaction(async (tx) => {
+
+        // Check for sufficient spandable balance
+        const hasSufficientBalance = await hasSufficientSpendableBalance({
+            tx,
+            userId: userId,
+            amount: amount,
+        });
+
+        return hasSufficientBalance;
+    });
+}
+
+
+/**
  * Create a new external order
  */
 export async function createExternalOrder( data: {
@@ -162,4 +188,3 @@ export async function getExternalOrder(id: string) {
         where: { id },
     });
 }
-
