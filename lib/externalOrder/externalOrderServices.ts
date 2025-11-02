@@ -5,7 +5,7 @@ import { entryOrderPurchase, entryOrderRefund, hasSufficientSpendableBalance } f
 /**
  * Check sufficient balsnce for external order
  */
-export async function hahasSufficientSpendableBalanceForExternalOrder(
+export async function hasSufficientSpendableBalanceForExternalOrder(
     {
         userId,
         amount,

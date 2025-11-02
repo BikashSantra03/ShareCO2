@@ -6,11 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowDown, ArrowUp, Clock, RefreshCw } from "lucide-react";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
-import { getTransactions } from "../actions";
-import { PublicWalletTransaction } from "../types";
 import { utcIsoToLocalDate, utcIsoToLocalTime12 } from "@/utils/time";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { PublicWalletTransaction } from "../../wallet/types";
+import { getWalletRechargeTransactions } from "../../wallet/actions";
 
 // Shimmer Component for Loading State
 const ShimmerTransactionCard = () => (
@@ -60,39 +60,21 @@ const getTransactionStyle = (
 // Helper to get purpose label
 const getPurposeLabel = (purpose: PublicWalletTransaction["purpose"]) => {
     switch (purpose) {
-        case "TOPUP":
-            return "Top Up";
-        case "BOOKING_RESERVE":
-            return "Ride Booking Reserved";
-        case "BOOKING_RELEASE":
-            return "Ride Booking Released";
-        case "BOOKING_SETTLE":
-            return "Ride Booking Settled";
-        case "PAYOUT":
-            return "Champion Payout";
-        case "REFUND":
-            return "Refund";
-        case "FINE_CHARGE":
-            return "Fine Charged";
-        case "PROMOTION":
-            return "Promotion Bonus";
-        case "ADJUSTMENT":
-            return "Balance Adjustment";
         case "ORDER_PURCHASE":
-            return "Order Purchase";
+            return "Mart Recharge";
         case "ORDER_REFUND":
-            return "Order Refund";
+            return "Mart Refund";
         default:
             return "Unknown Transaction";
     }
 };
 
-const WalletTransactions = () => {
+const RechargeTransactions = () => {
     const router = useRouter();
     const queryClient = useQueryClient();
     const scrollRef = useRef<HTMLDivElement>(null);
 
-    // Fetching all Transactions
+    // Fetching recharge transactions only
     const {
         data,
         fetchNextPage,
@@ -102,16 +84,14 @@ const WalletTransactions = () => {
         isError,
         error,
     } = useInfiniteQuery({
-        queryKey: ["wallet-transactions"],
+        queryKey: ["recharge-transactions"], // Unique key for recharge-specific cache
         queryFn: ({ pageParam = 1 }) =>
-            getTransactions({ page: pageParam, limit: 10 }),
+            getWalletRechargeTransactions({ page: pageParam, limit: 10 }),
         initialPageParam: 1,
         getNextPageParam: (lastPage, allPages, lastPageParam) => {
-            // If the number of transactions in the last page is less than the limit, there are no more pages
             if (lastPage.transactions.length < 10) {
                 return undefined;
             }
-            // Otherwise, return the next page number
             return lastPageParam + 1;
         },
     });
@@ -127,7 +107,7 @@ const WalletTransactions = () => {
         const handleScroll = () => {
             if (
                 scrollElement.scrollTop + scrollElement.clientHeight >=
-                    scrollElement.scrollHeight - 5 && // small threshold for better UX
+                    scrollElement.scrollHeight - 5 &&
                 hasNextPage &&
                 !isFetchingNextPage
             ) {
@@ -143,11 +123,11 @@ const WalletTransactions = () => {
     const handleRefresh = async () => {
         try {
             await queryClient.invalidateQueries({
-                queryKey: ["wallet-transactions"],
+                queryKey: ["recharge-transactions"],
             });
-            toast.success("Transactions refreshed");
+            toast.success("Recharge history refreshed");
         } catch (error) {
-            toast.error("Failed to refresh transactions");
+            toast.error("Failed to refresh recharge history");
             console.log(error);
         }
     };
@@ -176,7 +156,7 @@ const WalletTransactions = () => {
 
     if (isError) {
         console.error(error);
-        return <div>Error loading transactions</div>;
+        return <div>Error loading recharge history</div>;
     }
 
     return (
@@ -184,7 +164,7 @@ const WalletTransactions = () => {
             <CardHeader>
                 <div className="flex justify-between items-center">
                     <CardTitle className="text-lg font-semibold text-white">
-                        Transaction History
+                        Recharge History
                     </CardTitle>
                     <Button
                         variant="ghost"
@@ -263,11 +243,7 @@ const WalletTransactions = () => {
                                                     : ""}
                                                 {txn.amount.toFixed(2)} CP
                                             </Badge>
-                                            {(txn.purpose ===
-                                                "ORDER_PURCHASE" ||
-                                                txn.purpose ===
-                                                    "ORDER_REFUND") &&
-                                            txn.externalOrderId ? (
+                                            {txn.externalOrderId && (
                                                 <Button
                                                     variant="ghost"
                                                     size="sm"
@@ -280,35 +256,6 @@ const WalletTransactions = () => {
                                                 >
                                                     Order Details
                                                 </Button>
-                                            ) : txn.purpose === "TOPUP" &&
-                                              txn.paymentId ? (
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={() =>
-                                                        router.push(
-                                                            `/paymentDetails/${txn.paymentId}`
-                                                        )
-                                                    }
-                                                    className="text-white hover:bg-white/10 cursor-pointer text-xs px-2 py-0 h-6"
-                                                >
-                                                    Payment Details
-                                                </Button>
-                                            ) : (
-                                                txn.rideId && (
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() =>
-                                                            router.push(
-                                                                `/rideDetails/${txn.rideId}`
-                                                            )
-                                                        }
-                                                        className="text-white hover:bg-white/10 cursor-pointer text-xs px-2 py-0 h-6"
-                                                    >
-                                                        Ride Details
-                                                    </Button>
-                                                )
                                             )}
                                         </div>
                                     </div>
@@ -325,10 +272,10 @@ const WalletTransactions = () => {
                     ) : (
                         <div className="flex flex-col items-center justify-center h-full py-10 text-center">
                             <p className="text-gray-400 mt-2">
-                                No transactions found
+                                No recharge requests found
                             </p>
                             <p className="text-xs text-gray-500">
-                                Your wallet transactions will appear here
+                                Your recharge transactions will appear here
                             </p>
                         </div>
                     )}
@@ -338,4 +285,4 @@ const WalletTransactions = () => {
     );
 };
 
-export default WalletTransactions;
+export default RechargeTransactions;
