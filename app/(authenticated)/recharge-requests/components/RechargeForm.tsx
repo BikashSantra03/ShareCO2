@@ -52,6 +52,9 @@ const RechargeForm = () => {
             queryClient.invalidateQueries({
                 queryKey: ["wallet-transactions"],
             });
+            queryClient.invalidateQueries({
+                queryKey: ["recharge-transactions"],
+            });
         },
         onError: (error: AxiosError<ErrorResponse>) => {
             const errorMessage =
