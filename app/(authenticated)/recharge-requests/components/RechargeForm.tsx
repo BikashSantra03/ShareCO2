@@ -11,6 +11,14 @@ import { toast } from "sonner";
 import { getWallet } from "../../wallet/actions";
 import axios, { AxiosError } from "axios";
 import { useRouter } from "next/navigation";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
 
 // Expected error response structure
 interface ErrorResponse {
@@ -19,6 +27,8 @@ interface ErrorResponse {
 
 const RechargeForm = () => {
     const [carbonPoints, setCarbonPoints] = useState("");
+    const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+    const [successData, setSuccessData] = useState<{ amount: string; orderid: string } | null>(null);
     const queryClient = useQueryClient();
     const router = useRouter();
 
@@ -46,15 +56,8 @@ const RechargeForm = () => {
             if (!data.success) {
                 throw new Error(data.error || "Failed to process recharge");
             }
-            toast.success(
-                `Recharged ₹${amount} successfully! Order ID: ${data.orderid}`,
-                {
-                    action: {
-                        label: "View Transactions",
-                        onClick: () => router.push("/wallet"),
-                    },
-                }
-            );
+            setSuccessData({ amount, orderid: data.orderid });
+            setIsSuccessModalOpen(true);
             setCarbonPoints("");
             queryClient.invalidateQueries({ queryKey: ["wallet"] });
             queryClient.invalidateQueries({
@@ -120,56 +123,79 @@ const RechargeForm = () => {
     };
 
     return (
-        <Card className="bg-white/5 backdrop-blur-sm border-white/10">
-            <CardHeader>
-                <CardTitle className="text-lg font-semibold text-white flex items-center">
-                    Recharge Mart Wallet
-                </CardTitle>
-                <p className="text-sm text-gray-400">
-                    Conversion Rate: 1 CP = ₹
-                    {process.env.NEXT_PUBLIC_RUPEES_PER_CARBON_POINT || "18"}
-                </p>
-            </CardHeader>
-            <CardContent className="space-y-6">
-                <div className="space-y-2">
-                    <Label htmlFor="carbonPoints" className="text-white ">
-                        Carbon Points (CP) to Spend
-                    </Label>
-                    <Input
-                        id="carbonPoints"
-                        type="number"
-                        placeholder="Enter carbon points"
-                        value={carbonPoints}
-                        onChange={(e) => setCarbonPoints(e.target.value)}
-                        className="bg-black/30 border-gray-700 text-white"
-                        min="0"
-                        step="1"
-                    />
+        <>
+            <Card className="bg-white/5 backdrop-blur-sm border-white/10">
+                <CardHeader>
+                    <CardTitle className="text-lg font-semibold text-white flex items-center">
+                        Recharge Mart Wallet
+                    </CardTitle>
                     <p className="text-sm text-gray-400">
-                        Available: {spendable.toFixed(2)} CP
+                        Conversion Rate: 1 CP = ₹
+                        {process.env.NEXT_PUBLIC_RUPEES_PER_CARBON_POINT || "18"}
                     </p>
-                </div>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    <div className="space-y-2">
+                        <Label htmlFor="carbonPoints" className="text-white ">
+                            Carbon Points (CP) to Spend
+                        </Label>
+                        <Input
+                            id="carbonPoints"
+                            type="number"
+                            placeholder="Enter carbon points"
+                            value={carbonPoints}
+                            onChange={(e) => setCarbonPoints(e.target.value)}
+                            className="bg-black/30 border-gray-700 text-white"
+                            min="0"
+                            step="1"
+                        />
+                        <p className="text-sm text-gray-400">
+                            Available: {spendable.toFixed(2)} CP
+                        </p>
+                    </div>
 
-                <div className="text-sm text-emerald-400 bg-emerald-500/10 p-2 rounded">
-                    {carbonPoints && parseFloat(carbonPoints) > 0
-                        ? `${carbonPoints} CP → ₹${amount}`
-                        : "Enter CP to see conversion"}
-                </div>
+                    <div className="text-sm text-emerald-400 bg-emerald-500/10 p-2 rounded">
+                        {carbonPoints && parseFloat(carbonPoints) > 0
+                            ? `${carbonPoints} CP → ₹${amount}`
+                            : "Enter CP to see conversion"}
+                    </div>
 
-                <Button
-                    className="bg-emerald-600 hover:bg-emerald-700 cursor-pointer w-full"
-                    onClick={handleSubmit}
-                    disabled={
-                        mutation.isPending ||
-                        !carbonPoints ||
-                        parseFloat(carbonPoints) <= 0 ||
-                        walletLoading
-                    }
-                >
-                    {mutation.isPending ? "Processing..." : "Recharge"}
-                </Button>
-            </CardContent>
-        </Card>
+                    <Button
+                        className="bg-emerald-600 hover:bg-emerald-700 cursor-pointer w-full"
+                        onClick={handleSubmit}
+                        disabled={
+                            mutation.isPending ||
+                            !carbonPoints ||
+                            parseFloat(carbonPoints) <= 0 ||
+                            walletLoading
+                        }
+                    >
+                        {mutation.isPending ? "Processing..." : "Recharge"}
+                    </Button>
+                </CardContent>
+            </Card>
+
+            <Dialog open={isSuccessModalOpen} onOpenChange={setIsSuccessModalOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Recharge Successful</DialogTitle>
+                        <DialogDescription>
+                            {successData ? `Recharged ₹${successData.amount} successfully! Order ID: ${successData.orderid}` : ""}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button
+                            onClick={() => {
+                                setIsSuccessModalOpen(false);
+                                router.push("/wallet");
+                            }}
+                        >
+                            View Transactions
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        </>
     );
 };
 
