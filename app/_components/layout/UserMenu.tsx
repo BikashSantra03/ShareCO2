@@ -196,7 +196,7 @@ export function UserMenu() {
               <Button
                 variant="ghost"
                 className="w-full justify-start text-white hover:bg-white/10 cursor-pointer"
-                onClick={() => handleNavigate("/admin/recharge-requests")}
+                onClick={() => handleNavigate("/recharge-requests")}
               >
                 <CreditCard className="mr-2 h-5 w-5" />
                 Recharge Requests

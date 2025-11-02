@@ -1,9 +1,15 @@
 import { NextResponse } from "next/server";
-import jwt from "jsonwebtoken"
+import jwt from "jsonwebtoken";
 import logger from "@/config/logger";
 import { auth } from "@/lib/auth/auth";
-import { carbonPointsToRupees, getConversionRate } from "@/utils/carbonPointsConversion";
-import { createExternalOrder, hahasSufficientSpendableBalanceForExternalOrder } from "@/lib/externalOrder/externalOrderServices";
+import {
+    carbonPointsToRupees,
+    getConversionRate,
+} from "@/utils/carbonPointsConversion";
+import {
+    createExternalOrder,
+    hasSufficientSpendableBalanceForExternalOrder,
+} from "@/lib/externalOrder/externalOrderServices";
 import { OrderStatus } from "@prisma/client";
 
 const MART_SECRET_KEY = process.env.MART_SECRET_KEY;
@@ -15,7 +21,7 @@ export async function POST(req: Request) {
         const session = await auth();
         if (!session?.user?.id || !session?.user?.email) {
             return NextResponse.json(
-                { error: 'Not authenticated' },
+                { error: "Not authenticated" },
                 { status: 500 }
             );
         }
@@ -37,14 +43,15 @@ export async function POST(req: Request) {
         const conversionRate = getConversionRate();
 
         // Check the wallet has sufficient balance or not
-        const hasSufficientBalance = hahasSufficientSpendableBalanceForExternalOrder({
-            userId: session.user.id,
-            amount: carboncoin,
-        })
+        const hasSufficientBalance =
+            hasSufficientSpendableBalanceForExternalOrder({
+                userId: session.user.id,
+                amount: carboncoin,
+            });
 
-        if ( !hasSufficientBalance ) {
+        if (!hasSufficientBalance) {
             return NextResponse.json(
-                { error: 'Wallet has not sufficient balance' },
+                { error: "Wallet has not sufficient balance" },
                 { status: 500 }
             );
         }
@@ -52,16 +59,16 @@ export async function POST(req: Request) {
         // Varify secret key
         if (!MART_SECRET_KEY) {
             return NextResponse.json(
-                { error: 'Unable to generate secret token' },
+                { error: "Unable to generate secret token" },
                 { status: 500 }
             );
         }
 
         // Get user information
         const user = {
-            id   : session.user.id,
+            id: session.user.id,
             email: session.user.email,
-            name : session.user.name ?? "",
+            name: session.user.name ?? "",
         };
 
         // Generate short lived JWT token
@@ -76,17 +83,20 @@ export async function POST(req: Request) {
         );
 
         // Make request to external API
-        const response = await fetch(`${MART_SERVER_URL}/wp-json/shareco2mart/recharge`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-                token : token,
-                amount: amount,
-            }),
-        });
+        const response = await fetch(
+            `${MART_SERVER_URL}/wp-json/shareco2mart/recharge`,
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    token: token,
+                    amount: amount,
+                }),
+            }
+        );
 
         if (!response.ok) {
             const errorText = await response.text();
@@ -102,30 +112,27 @@ export async function POST(req: Request) {
 
         // Check for error
         if (!data.success) {
-            return NextResponse.json(
-                { error: data.error },
-                { status: 501 }
-            );
+            return NextResponse.json({ error: data.error }, { status: 501 });
         }
 
         // Get the external order id
         const externalOrderId = String(data.orderid);
-        const externalUserId  = String(data.userid);
+        const externalUserId = String(data.userid);
 
         // Insert external order in database
         const externalOrder = await createExternalOrder({
-            userId        : user.id,
-            extOrderId    : externalOrderId,
-            extUserId     : externalUserId,
-            amount        : amount,
-            coinAmount    : carboncoin,
+            userId: user.id,
+            extOrderId: externalOrderId,
+            extUserId: externalUserId,
+            amount: amount,
+            coinAmount: carboncoin,
             conversionRate: conversionRate,
-            status        : OrderStatus.COMPLETED,
+            status: OrderStatus.COMPLETED,
         });
 
         if (!externalOrder) {
             return NextResponse.json(
-                { error: 'Unable to create order' },
+                { error: "Unable to create order" },
                 { status: 500 }
             );
         }
@@ -135,11 +142,10 @@ export async function POST(req: Request) {
             { success: true, orderid: externalOrder.id },
             { status: 200 }
         );
-
     } catch (error) {
-        logger.error('GET /api/mart/recharge error:', error);
+        logger.error("GET /api/mart/recharge error:", error);
         return NextResponse.json(
-            { error: 'Unable to create recharge' },
+            { error: "Unable to create recharge" },
             { status: 500 }
         );
     }

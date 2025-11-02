@@ -90,6 +90,72 @@ export async function getWalletTransactions({
 }
 
 /**
+ * Get recharge-specific wallet transactions for the user
+ */
+export async function getRechargeTransactions({
+    userId,
+    page = 1,
+    limit = 10,
+}: {
+    userId: string;
+    page: number;
+    limit: number;
+}) {
+    const skip = (page - 1) * limit;
+
+    // Find wallet ID from userId
+    const wallet = await prisma.wallet.findUnique({
+        where: { userId },
+        select: { id: true },
+    });
+
+    if (!wallet) {
+        throw new Error(`Wallet not found for user ${userId}`);
+    }
+
+    // Fetch paginated recharge transactions with related data
+    const [transactions, total] = await prisma.$transaction([
+        prisma.walletTransaction.findMany({
+            where: {
+                walletId: wallet.id,
+                purpose: { in: ["ORDER_PURCHASE", "ORDER_REFUND"] }, // Filter server-side
+            },
+            orderBy: { createdAt: "desc" },
+            skip: skip,
+            take: limit,
+            include: {
+                transaction: {
+                    include: {
+                        payment: {
+                            select: {
+                                id: true,
+                            },
+                        },
+                    },
+                },
+                externalOrder: {
+                    select: {
+                        id: true,
+                        extOrderId: true,
+                    },
+                },
+            },
+        }),
+        prisma.walletTransaction.count({
+            where: {
+                walletId: wallet.id,
+                purpose: { in: ["ORDER_PURCHASE", "ORDER_REFUND"] }, // Filter for total count
+            },
+        }),
+    ]);
+
+    return {
+        transactions,
+        total,
+    };
+}
+
+/**
  * Get a single wallet transaction by its ID
  */
 export async function singleTransactionDetails(
