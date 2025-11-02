@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { HomeIcon } from "lucide-react";
 import Link from "next/link";
 import RechargeForm from "./components/RechargeForm";
-import RechargeTransactions from "./components/RechargeTransactions";
+// import RechargeTransactions from "./components/RechargeTransactions";
 
 export default function RechargeRequestsPage() {
     return (
@@ -28,7 +28,7 @@ export default function RechargeRequestsPage() {
 
             <div className="space-y-6">
                 <RechargeForm />
-                <RechargeTransactions />
+                {/* <RechargeTransactions /> */}
             </div>
         </div>
     );

@@ -10,6 +10,7 @@ import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { getWallet } from "../../wallet/actions";
 import axios, { AxiosError } from "axios";
+import { useRouter } from "next/navigation";
 
 // Expected error response structure
 interface ErrorResponse {
@@ -19,6 +20,7 @@ interface ErrorResponse {
 const RechargeForm = () => {
     const [carbonPoints, setCarbonPoints] = useState("");
     const queryClient = useQueryClient();
+    const router = useRouter();
 
     // Fetch wallet data
     const {
@@ -45,16 +47,22 @@ const RechargeForm = () => {
                 throw new Error(data.error || "Failed to process recharge");
             }
             toast.success(
-                `Recharged ₹${amount} successfully! Order ID: ${data.orderid}`
+                `Recharged ₹${amount} successfully! Order ID: ${data.orderid}`,
+                {
+                    action: {
+                        label: "View Transactions",
+                        onClick: () => router.push("/wallet"),
+                    },
+                }
             );
             setCarbonPoints("");
             queryClient.invalidateQueries({ queryKey: ["wallet"] });
             queryClient.invalidateQueries({
                 queryKey: ["wallet-transactions"],
             });
-            queryClient.invalidateQueries({
-                queryKey: ["recharge-transactions"],
-            });
+            // queryClient.invalidateQueries({
+            //     queryKey: ["recharge-transactions"],
+            // });
         },
         onError: (error: AxiosError<ErrorResponse>) => {
             const errorMessage =
